@@ -1,0 +1,18 @@
+{
+  "name": "invite-console-express",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web console for login->invite flow with manual SMS code input",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "undici": "^7.22.0"
+  }
+}
