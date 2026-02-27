@@ -26,6 +26,7 @@ const hzmPassEl = document.getElementById('hzmPass');
 const hzmSidEl = document.getElementById('hzmSid');
 const hzmSaveBtn = document.getElementById('hzmSaveBtn');
 const hzmLoginBtn = document.getElementById('hzmLoginBtn');
+const hzmBalanceBtn = document.getElementById('hzmBalanceBtn');
 const hzmStatusEl = document.getElementById('hzmStatus');
 
 const autoCountEl = document.getElementById('autoCount');
@@ -170,8 +171,24 @@ async function hzmLogin() {
   }
 }
 
+async function hzmBalance() {
+  hzmBalanceBtn.disabled = true;
+  hzmStatusEl.textContent = '查询余额中...';
+  try {
+    const resp = await fetch('/api/haozhuma-balance');
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error);
+    hzmStatusEl.textContent = `余额: ${data.money} 元 | 最大区号: ${data.num}`;
+  } catch (err) {
+    hzmStatusEl.textContent = `查询失败: ${err.message}`;
+  } finally {
+    hzmBalanceBtn.disabled = false;
+  }
+}
+
 hzmSaveBtn.addEventListener('click', saveHzmConfig);
 hzmLoginBtn.addEventListener('click', hzmLogin);
+hzmBalanceBtn.addEventListener('click', hzmBalance);
 loadHzmConfig();
 
 // ── 统计与结果 ──

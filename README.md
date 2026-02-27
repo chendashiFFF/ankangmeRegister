@@ -21,8 +21,6 @@ npm run dev
 
 编辑 `config/api.config.json`。
 
-可先参考：`config/api.config.example.json`
-
 关键字段：
 
 - `login.token_path`: token 在登录响应里的路径，例如 `data.token`

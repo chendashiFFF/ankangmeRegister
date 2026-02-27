@@ -12,23 +12,9 @@ const API_CONFIG_PATH = path.join(__dirname, '..', 'config', 'api.config.json');
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-function parseMaybeJson(value) {
-  if (typeof value !== 'string') return value;
-  const trimmed = value.trim();
-  if (!trimmed) return value;
-  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-    try {
-      return JSON.parse(trimmed);
-    } catch (e) {
-      return value;
-    }
-  }
-  return value;
-}
-
 function loadApiConfig() {
   if (!fs.existsSync(API_CONFIG_PATH)) {
-    throw new Error('Missing config/api.config.json (copy from config/api.config.example.json and fill it).');
+    throw new Error('Missing config/api.config.json');
   }
 
   const raw = fs.readFileSync(API_CONFIG_PATH, 'utf8');
@@ -228,16 +214,6 @@ function generateRandomDevice(appV) {
     mdl: randomItem(models),
     isE: false
   };
-}
-
-function sanitizeDeviceInput(deviceInput) {
-  if (deviceInput === null || deviceInput === undefined || deviceInput === '') return {};
-
-  const parsed = parseMaybeJson(deviceInput);
-  if (typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('device must be a JSON object.');
-  }
-  return parsed;
 }
 
 // ── 好主码 (haozhuma) SMS platform client ──
@@ -448,24 +424,6 @@ async function runLoginAndInvite({ phone, code, inviteCode, device }, config) {
     inviteResponse: inviteResp.body,
     proxies_used
   };
-}
-
-function parseRows(rowsText) {
-  const rows = [];
-  const lines = String(rowsText || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    const [phone, code] = line.split(',').map((v) => v && v.trim());
-    if (!phone || !code) {
-      throw new Error(`Invalid row: ${line}. Use format phone,code`);
-    }
-    rows.push({ phone, code });
-  }
-
-  return rows;
 }
 
 app.get('/api/health', (_, res) => {
@@ -706,6 +664,23 @@ app.post('/api/haozhuma-login', async (req, res) => {
     const token = await hzmLogin(server, hzm.user, hzm.pass);
     saveHzmToken(token);
     res.json({ ok: true, token });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error.message });
+  }
+});
+
+app.get('/api/haozhuma-balance', async (_, res) => {
+  try {
+    const hzm = getHzmConfig();
+    const server = hzm.server || 'https://api.haozhuma.com';
+    if (!hzm.token) {
+      return res.status(400).json({ ok: false, error: '请先登录好主码' });
+    }
+    const data = await hzmRequest(server, { api: 'getSummary', token: hzm.token });
+    if (String(data.code) !== '0') {
+      throw new Error(data.msg || JSON.stringify(data));
+    }
+    res.json({ ok: true, money: data.money, num: data.num });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
   }
